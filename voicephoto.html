@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SoulBook Advanced</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:linear-gradient(135deg,#ffd6e8,#d6f0ff);
+    padding:20px;
+}
+
+/* LOGIN SCREEN */
+#lockScreen{
+    position:fixed;
+    top:0;left:0;
+    width:100%;height:100%;
+    background:linear-gradient(135deg,#ffb6d9,#b6e6ff);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+}
+
+input{
+    padding:10px;
+    margin:5px;
+    border-radius:10px;
+    border:none;
+}
+
+/* MAIN */
+.container{
+    max-width:800px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:20px;
+    display:none;
+}
+
+/* SECTION */
+.section{
+    margin-top:20px;
+}
+
+/* MEMORY BOX */
+.box{
+    background:#f7f7f7;
+    padding:10px;
+    margin:10px 0;
+    border-radius:10px;
+}
+
+/* IMAGE */
+img{
+    width:100%;
+    border-radius:10px;
+}
+
+/* VOICE BOX */
+.voice{
+    background:#fff;
+    border-left:5px solid #ff4d88;
+    padding:10px;
+    border-radius:10px;
+}
+
+/* WAVE ANIMATION */
+.wave{
+    display:flex;
+    gap:3px;
+    margin:10px 0;
+}
+.wave span{
+    width:5px;
+    height:10px;
+    background:#ff4d88;
+    animation:wave 1s infinite ease-in-out;
+}
+.wave span:nth-child(2){animation-delay:0.2s;}
+.wave span:nth-child(3){animation-delay:0.4s;}
+.wave span:nth-child(4){animation-delay:0.6s;}
+
+@keyframes wave{
+    0%,100%{height:10px;}
+    50%{height:25px;}
+}
+
+/* BUTTON */
+button{
+    padding:8px 12px;
+    border:none;
+    border-radius:10px;
+    background:#ff4d88;
+    color:white;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<!-- 🔐 LOCK SCREEN -->
+<div id="lockScreen">
+    <h2>🔐 Enter SoulBook PIN</h2>
+    <input type="password" id="pinInput" placeholder="Enter PIN">
+    <button onclick="unlock()">Unlock</button>
+</div>
+
+<!-- MAIN APP -->
+<div class="container" id="app">
+
+<h1>🌸 SoulBook Memories</h1>
+
+<!-- PHOTO -->
+<div class="section">
+<h2>📸 Photos</h2>
+<input type="file" id="photoInput" accept="image/*">
+<button onclick="savePhoto()">Save Photo</button>
+<div id="photoList"></div>
+</div>
+
+<hr>
+
+<!-- VOICE -->
+<div class="section">
+<h2>🎤 Voice Notes</h2>
+
+<button onclick="startRecording()">▶ Start</button>
+<button onclick="stopRecording()">⏹ Stop</button>
+
+<p id="status"></p>
+
+<div id="voiceList"></div>
+</div>
+
+</div>
+
+<script>
+
+let PIN = "1234"; // 🔐 change your password
+
+let memories = JSON.parse(localStorage.getItem("soulbook")) || {
+    photos:[],
+    voices:[]
+};
+
+/* LOCK */
+function unlock(){
+    let val = document.getElementById("pinInput").value;
+    if(val === PIN){
+        document.getElementById("lockScreen").style.display="none";
+        document.getElementById("app").style.display="block";
+        render();
+    } else {
+        alert("Wrong PIN!");
+    }
+}
+
+/* SAVE PHOTO */
+function savePhoto(){
+    let file = document.getElementById("photoInput").files[0];
+    let reader = new FileReader();
+
+    reader.onload = e=>{
+        memories.photos.push(e.target.result);
+        save();
+    };
+
+    reader.readAsDataURL(file);
+}
+
+/* RECORD */
+let recorder;
+let chunks = [];
+let startTime;
+
+function startRecording(){
+    navigator.mediaDevices.getUserMedia({audio:true})
+    .then(stream=>{
+        recorder = new MediaRecorder(stream);
+        chunks = [];
+        startTime = Date.now();
+
+        recorder.start();
+        document.getElementById("status").innerText="🎤 Recording...";
+
+        recorder.ondataavailable = e=>{
+            chunks.push(e.data);
+        };
+
+        recorder.onstop = ()=>{
+            let blob = new Blob(chunks,{type:"audio/webm"});
+            let url = URL.createObjectURL(blob);
+
+            let duration = Math.floor((Date.now()-startTime)/1000);
+
+            memories.voices.push({
+                url:url,
+                duration:duration
+            });
+
+            save();
+        };
+    });
+}
+
+function stopRecording(){
+    if(recorder){
+        recorder.stop();
+        document.getElementById("status").innerText="✅ Saved!";
+    }
+}
+
+/* SAVE */
+function save(){
+    localStorage.setItem("soulbook",JSON.stringify(memories));
+    render();
+}
+
+/* RENDER */
+function render(){
+
+    // PHOTOS
+    let p = document.getElementById("photoList");
+    p.innerHTML="";
+    memories.photos.forEach(img=>{
+        p.innerHTML += `<div class="box"><img src="${img}"></div>`;
+    });
+
+    // VOICE
+    let v = document.getElementById("voiceList");
+    v.innerHTML="";
+
+    memories.voices.forEach(vn=>{
+        v.innerHTML += `
+        <div class="voice">
+            🎧 Voice Note (${vn.duration}s)
+
+            <div class="wave">
+                <span></span><span></span><span></span><span></span>
+            </div>
+
+            <button onclick="playVoice('${vn.url}')">▶ Play</button>
+        </div>
+        `;
+    });
+}
+
+/* PLAY */
+function playVoice(url){
+    let a = new Audio(url);
+    a.play();
+}
+
+render();
+
+</script>
+
+</body>
+</html>
