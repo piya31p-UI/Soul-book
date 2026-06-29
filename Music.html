@@ -109,6 +109,43 @@ button{
     color:#ff4d6d;
     font-weight:bold;
 }
+    /* ADD AFTER LINE 74 */
+
+.save {
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+.save:disabled { opacity: 0.45; cursor: not-allowed; }
+
+#saveProgress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 4px;
+    width: 0%;
+    background: rgba(255,255,255,0.6);
+    transition: width 0.3s;
+}
+
+#toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: #222;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 16px;
+    opacity: 0;
+    transition: all 0.4s ease;
+    z-index: 999;
+}
+#toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
 </style>
 </head>
 
@@ -135,7 +172,16 @@ button{
 <button class="play" onclick="togglePlay()" id="playBtn">▶</button>
 <button class="next" onclick="nextSong()">⏭</button>
 <button class="heart" onclick="likeSong()">❤️</button>
+    <!-- ADD AFTER LINE 101 -->
+
+<button class="save" onclick="saveCurrentSong()" id="saveBtn" disabled>
+    💾 Save Song
+    <div id="saveProgress"></div>
+</button>
 </div>
+    
+
+<div id="toast"></div>
 
 <!-- VOLUME -->
 Volume:
@@ -151,6 +197,10 @@ let songs = [];
 let current = 0;
 let audio = document.getElementById("audio");
 let playing = false;
+    
+
+const saveBtn = document.getElementById("saveBtn");
+const saveBar = document.getElementById("saveProgress");
 
 let disc = document.getElementById("disc");
 
@@ -176,6 +226,9 @@ function loadSong(i){
     current = i;
     audio.src = URL.createObjectURL(songs[i]);
     document.getElementById("title").innerText = songs[i].name;
+
+
+saveBtn.disabled = false;
     highlight();
     playSong();
 }
@@ -234,6 +287,49 @@ document.getElementById("volume").addEventListener("input", function(){
 });
 
 audio.addEventListener("ended", nextSong);
+    // ADD AFTER LINE 175
+
+function saveCurrentSong() {
+    if (songs.length === 0) return;
+    saveSong(current);
+}
+
+function saveSong(i) {
+    const song = songs[i];
+    if (!song) return;
+
+    saveBar.style.width = "0%";
+    let pct = 0;
+    const ticker = setInterval(() => {
+        pct = Math.min(pct + Math.random() * 20, 90);
+        saveBar.style.width = pct + "%";
+    }, 100);
+
+    const url = URL.createObjectURL(song);
+
+    setTimeout(() => {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = song.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        clearInterval(ticker);
+        saveBar.style.width = "100%";
+        setTimeout(() => { saveBar.style.width = "0%"; }, 600);
+        URL.revokeObjectURL(url);
+
+        showToast(`💾 "${song.name}" saved to your device!`);
+    }, 600);
+}
+
+function showToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.innerText = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 3000);
+}
 </script>
 
 </body>
