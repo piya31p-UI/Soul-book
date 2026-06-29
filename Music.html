@@ -3,113 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <title>Advanced Music Player</title>
-
 <style>
-    /* REPLACE LINE 9-14 */
 body{
     margin:0;
     font-family:Arial;
     background:linear-gradient(135deg,#ff9a9e,#fad0c4);
-    min-height:100vh;        /* ← change height to min-height */
+    min-height:100vh;
     width:100vw;
-    overflow-x:hidden;       /* ← change overflow:hidden to this */
-    overflow-y:auto;         /* ← ADD this line */
+    overflow-x:hidden;
+    overflow-y:auto;
 }
-
-/* FULL SCREEN PLAYER */
 .player{
     width:100%;
-    height:100vh;
+    min-height:100vh;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
     text-align:center;
+    padding:20px;
+    box-sizing:border-box;
 }
-
-/* TITLE */
-h2{
-    font-size:40px;
-    margin:10px;
-}
-
-/* DISC */
+h2{ font-size:40px; margin:10px; }
 .disc{
-    width:180px;
-    height:180px;
-    border-radius:50%;
-    background:black;
+    width:180px; height:180px;
+    border-radius:50%; background:black;
     margin:20px;
     animation:spin 4s linear infinite;
     animation-play-state:paused;
 }
-
 @keyframes spin{
     from{transform:rotate(0deg);}
     to{transform:rotate(360deg);}
 }
-
-/* FILE INPUT */
-input[type="file"]{
-    font-size:18px;
-    margin:10px;
-}
-
-/* SONG TITLE */
-h3{
-    font-size:28px;
-}
-
-/* PROGRESS BAR */
-#progress{
-    width:60%;
-    height:6px;
-    margin:10px;
-}
-
-/* CONTROLS */
+input[type="file"]{ font-size:18px; margin:10px; }
+h3{ font-size:24px; max-width:80%; word-break:break-word; }
+#progress{ width:60%; height:6px; margin:10px; accent-color:#ff4d6d; }
 button{
-    padding:15px 20px;
-    margin:8px;
-    border:none;
-    border-radius:12px;
-    cursor:pointer;
-    font-size:18px;
+    padding:15px 20px; margin:8px;
+    border:none; border-radius:12px;
+    cursor:pointer; font-size:18px;
 }
-
-.play{background:#ff4d6d;color:white;}
-.next,.prev{background:#333;color:white;}
-.heart{background:pink;}
-
-/* VOLUME */
-#volume{
-    width:200px;
-    margin-top:10px;
+.play{ background:#ff4d6d; color:white; }
+.next,.prev{ background:#333; color:white; }
+.heart{ background:pink; }
+.save{
+    background:linear-gradient(135deg,#6a11cb,#2575fc);
+    color:white; position:relative; overflow:hidden;
 }
-
-/* PLAYLIST */
-#playlist{
-    width:60%;
-    max-height:200px;
-    overflow-y:auto;
-    margin-top:20px;
-    background:rgba(255,255,255,0.3);
-    padding:10px;
-    border-radius:10px;
+.save:disabled{ opacity:0.45; cursor:not-allowed; }
+#saveProgress{
+    position:absolute; bottom:0; left:0;
+    height:4px; width:0%;
+    background:rgba(255,255,255,0.6);
+    transition:width 0.3s;
 }
-
-.song{
-    text-align:left;
-    padding:10px;
-    cursor:pointer;
-    font-size:18px;
-}
-.song:hover{
-    background:rgba(255,255,255,0.5);
-}
-    /* ADD BEFORE YOUR .save CSS (around line 74) */
-
-/* TABS */
+#volume{ width:200px; margin-top:10px; accent-color:#ff4d6d; }
 .tabs{ display:flex; gap:10px; margin-top:20px; }
 .tab{
     padding:10px 24px; border:none;
@@ -118,22 +67,28 @@ button{
     font-weight:bold;
 }
 .tab.active-tab{ background:#ff4d6d; color:white; }
-
-/* SAVED LIST */
-#savedList{
+#playlist, #savedList{
     width:60%; max-height:200px;
     overflow-y:auto; margin-top:10px;
     background:rgba(255,255,255,0.3);
     padding:10px; border-radius:10px;
-    display:none;
 }
+#savedList{ display:none; }
 #savedList.show{ display:block; }
-
+.song{
+    text-align:left; padding:10px;
+    cursor:pointer; font-size:18px;
+    border-radius:6px;
+    display:flex; align-items:center;
+    justify-content:space-between;
+}
+.song:hover{ background:rgba(255,255,255,0.5); }
+.song.active{ color:#ff4d6d; font-weight:bold; }
+.song-name{ flex:1; text-align:left; }
 .icon-btn{
     background:transparent; border:none;
     font-size:18px; cursor:pointer;
-    padding:2px 6px; border-radius:6px;
-    margin:0;
+    padding:2px 6px; border-radius:6px; margin:0;
 }
 .del-btn{ color:#e74c3c; }
 .saved-badge{
@@ -141,119 +96,78 @@ button{
     color:white; border-radius:20px;
     padding:2px 8px; margin-left:6px;
 }
-.empty{ color:#888; font-style:italic; padding:20px; }
+.empty{ color:#888; font-style:italic; padding:20px; font-size:15px; }
 .clearall{
     background:#e74c3c; color:white;
     font-size:14px; padding:8px 14px;
     margin-top:8px; border-radius:10px;
     border:none; cursor:pointer;
 }
-.active{
-    color:#ff4d6d;
-    font-weight:bold;
+#toast{
+    position:fixed; bottom:30px; left:50%;
+    transform:translateX(-50%) translateY(60px);
+    background:#222; color:#fff;
+    padding:12px 24px; border-radius:30px;
+    font-size:16px; opacity:0;
+    transition:all 0.4s ease; z-index:999;
+    pointer-events:none;
 }
-    /* ADD AFTER LINE 74 */
-
-.save {
-    background: linear-gradient(135deg, #6a11cb, #2575fc);
-    color: white;
-    position: relative;
-    overflow: hidden;
-}
-.save:disabled { opacity: 0.45; cursor: not-allowed; }
-
-#saveProgress {
-    position: absolute;
-    bottom: 0; left: 0;
-    height: 4px;
-    width: 0%;
-    background: rgba(255,255,255,0.6);
-    transition: width 0.3s;
-}
-
-#toast {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%) translateY(60px);
-    background: #222;
-    color: #fff;
-    padding: 12px 24px;
-    border-radius: 30px;
-    font-size: 16px;
-    opacity: 0;
-    transition: all 0.4s ease;
-    z-index: 999;
-}
-#toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-}
+#toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
 </head>
-
 <body>
 
 <div class="player">
 
-<h2>🎧 My Music Player</h2>
+  <h2>🎧 My Music Player</h2>
 
-<input type="file" id="fileInput" multiple accept="audio/*">
+  <input type="file" id="fileInput" multiple accept="audio/*">
 
-<div class="disc" id="disc"></div>
+  <div class="disc" id="disc"></div>
+  <audio id="audio"></audio>
 
-<audio id="audio"></audio>
+  <h3 id="title">No Song Selected</h3>
 
-<h3 id="title">No Song Selected</h3>
+  <input type="range" id="progress" value="0">
 
-<!-- PROGRESS -->
-<input type="range" id="progress" value="0">
+  <div>
+    <button class="prev" onclick="prevSong()">⏮</button>
+    <button class="play" onclick="togglePlay()" id="playBtn">▶</button>
+    <button class="next" onclick="nextSong()">⏭</button>
+    <button class="heart" onclick="likeSong()">❤️</button>
+    <button class="save" onclick="saveCurrentSong()" id="saveBtn" disabled>
+      💾 Save to App
+      <div id="saveProgress"></div>
+    </button>
+  </div>
 
-<!-- CONTROLS -->
-<div>
-<button class="prev" onclick="prevSong()">⏮</button>
-<button class="play" onclick="togglePlay()" id="playBtn">▶</button>
-<button class="next" onclick="nextSong()">⏭</button>
-<button class="heart" onclick="likeSong()">❤️</button>
-    <!-- ADD AFTER LINE 101 -->
+  Volume: <input type="range" id="volume" min="0" max="1" step="0.01" value="1">
 
-<button class="save" onclick="saveCurrentSong()" id="saveBtn" disabled>
-    💾 Save Song
-    <div id="saveProgress"></div>
-</button>
+  <div class="tabs">
+    <button class="tab active-tab" onclick="switchTab('playlist')">🎵 Queue</button>
+    <button class="tab" onclick="switchTab('saved')">💾 Saved Songs</button>
+  </div>
+
+  <div id="playlist"></div>
+  <div id="savedList"></div>
+
+  <button class="clearall" onclick="clearAllSaved()">🗑 Clear All Saved</button>
+
 </div>
-    
 
 <div id="toast"></div>
-<!-- ADD AFTER THE </div> THAT CLOSES CONTROLS (~line 108) -->
-
-<!-- TABS -->
-<div class="tabs">
-  <button class="tab active-tab" onclick="switchTab('playlist')">🎵 Queue</button>
-  <button class="tab" onclick="switchTab('saved')">💾 Saved Songs</button>
-</div>
-
-<!-- SAVED LIST -->
-<div id="savedList"></div>
-
-<button class="clearall" onclick="clearAllSaved()">🗑 Clear All Saved</button>
-<!-- VOLUME -->
-Volume:
-<input type="range" id="volume" min="0" max="1" step="0.01">
-
-<!-- PLAYLIST -->
-<div id="playlist"></div>
-
-</div>
 
 <script>
-let songs = [];
+let songs   = [];
 let current = 0;
-let audio = document.getElementById("audio");
 let playing = false;
-    /* ADD AFTER:  let playing = false; */
 
-// ── INDEXEDDB ──
+const audio   = document.getElementById("audio");
+const disc    = document.getElementById("disc");
+const saveBtn = document.getElementById("saveBtn");
+const saveBar = document.getElementById("saveProgress");
+
+/* ── INDEXEDDB ── */
 let db;
 function openDB(){
     return new Promise((resolve,reject)=>{
@@ -267,100 +181,106 @@ function dbSave(obj){ return new Promise((res,rej)=>{ const r=db.transaction("sa
 function dbGetAll(){ return new Promise((res,rej)=>{ const r=db.transaction("savedSongs","readonly").objectStore("savedSongs").getAll(); r.onsuccess=e=>res(e.target.result); r.onerror=rej; }); }
 function dbDelete(name){ return new Promise((res,rej)=>{ const r=db.transaction("savedSongs","readwrite").objectStore("savedSongs").delete(name); r.onsuccess=res; r.onerror=rej; }); }
 function dbClear(){ return new Promise((res,rej)=>{ const r=db.transaction("savedSongs","readwrite").objectStore("savedSongs").clear(); r.onsuccess=res; r.onerror=rej; }); }
-    
 
-const saveBtn = document.getElementById("saveBtn");
-const saveBar = document.getElementById("saveProgress");
-
-let disc = document.getElementById("disc");
-
+/* ── FILE INPUT ── */
 document.getElementById("fileInput").addEventListener("change", function(e){
     songs = Array.from(e.target.files);
     renderList();
     loadSong(0);
+    switchTab("playlist");
 });
 
+/* ── RENDER QUEUE ── */
 function renderList(){
-    let list = document.getElementById("playlist");
+    const list = document.getElementById("playlist");
     list.innerHTML = "";
     songs.forEach((song,i)=>{
-        let div = document.createElement("div");
+        const div = document.createElement("div");
         div.className = "song";
-        div.innerText = song.name;
-        div.onclick = ()=>loadSong(i);
+
+        const name = document.createElement("span");
+        name.className = "song-name";
+        name.innerText = song.name;
+        name.onclick = ()=>loadSong(i);
+
+        const saveIco = document.createElement("button");
+        saveIco.className = "icon-btn";
+        saveIco.title = "Save to app";
+        saveIco.innerHTML = "💾";
+        saveIco.onclick = e => { e.stopPropagation(); saveSongToDB(i); };
+
+        div.appendChild(name);
+        div.appendChild(saveIco);
         list.appendChild(div);
     });
 }
 
+/* ── LOAD SONG ── */
 function loadSong(i){
     current = i;
     audio.src = URL.createObjectURL(songs[i]);
     document.getElementById("title").innerText = songs[i].name;
-
-
-saveBtn.disabled = false;
+    saveBtn.disabled = false;
     highlight();
-    playSong();
+    audio.load();
+    audio.oncanplay = function(){
+        audio.oncanplay = null;
+        playSong();
+    };
 }
 
 function highlight(){
-    document.querySelectorAll(".song").forEach((el,i)=>{
+    document.querySelectorAll("#playlist .song").forEach((el,i)=>{
         el.classList.toggle("active", i===current);
     });
 }
 
+/* ── PLAYBACK ── */
 function togglePlay(){
     if(playing){
-        audio.pause();
-        playing=false;
+        audio.pause(); playing=false;
         document.getElementById("playBtn").innerText="▶";
         disc.style.animationPlayState="paused";
-    } else {
-        playSong();
-    }
+    } else { playSong(); }
 }
 
 function playSong(){
-    audio.play();
-    playing=true;
+    audio.play(); playing=true;
     document.getElementById("playBtn").innerText="⏸";
     disc.style.animationPlayState="running";
 }
 
 function nextSong(){
-    current = (current+1)%songs.length;
+    if(songs.length===0) return;
+    current=(current+1)%songs.length;
     loadSong(current);
 }
 
 function prevSong(){
-    current = (current-1+songs.length)%songs.length;
+    if(songs.length===0) return;
+    current=(current-1+songs.length)%songs.length;
     loadSong(current);
 }
 
-function likeSong(){
-    alert("❤️ Added to favorites!");
-}
+function likeSong(){ showToast("❤️ Added to favorites!"); }
 
-/* PROGRESS */
+/* ── PROGRESS ── */
 audio.addEventListener("timeupdate", ()=>{
     document.getElementById("progress").value =
-    (audio.currentTime/audio.duration)*100 || 0;
+        (audio.currentTime/audio.duration)*100 || 0;
 });
-
 document.getElementById("progress").addEventListener("input", function(){
     audio.currentTime = (this.value/100)*audio.duration;
 });
 
-/* VOLUME */
+/* ── VOLUME ── */
 document.getElementById("volume").addEventListener("input", function(){
     audio.volume = this.value;
 });
 
 audio.addEventListener("ended", nextSong);
-    // ADD AFTER LINE 175
 
-/* REPLACE your old saveCurrentSong() and saveSong() with this */
-
+/* ── SAVE TO INDEXEDDB ── */
 function saveCurrentSong(){
     if(songs.length===0) return;
     saveSongToDB(current);
@@ -369,11 +289,9 @@ function saveCurrentSong(){
 async function saveSongToDB(i){
     const song = songs[i];
     if(!song) return;
-
     saveBar.style.width="0%";
     let pct=0;
     const ticker=setInterval(()=>{ pct=Math.min(pct+Math.random()*25,90); saveBar.style.width=pct+"%"; },80);
-
     try{
         await dbSave({ name:song.name, blob:song });
         clearInterval(ticker);
@@ -388,27 +306,21 @@ async function saveSongToDB(i){
     }
 }
 
-function showToast(msg) {
-    const toast = document.getElementById("toast");
-    toast.innerText = msg;
-    toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 3000);
-}
-    /* ADD BEFORE </script> */
-
+/* ── SAVED LIST ── */
 async function renderSavedList(){
     const list = document.getElementById("savedList");
     list.innerHTML="";
     const saved = await dbGetAll();
-    if(saved.length===0){ list.innerHTML=`<div class="empty">No saved songs yet. Hit 💾 to save!</div>`; return; }
+    if(saved.length===0){
+        list.innerHTML=`<div class="empty">No saved songs yet. Hit 💾 to save!</div>`;
+        return;
+    }
     saved.forEach(item=>{
         const div=document.createElement("div");
-        div.style.cssText="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;font-size:16px;border-radius:6px;cursor:pointer;";
-        div.onmouseenter=()=>div.style.background="rgba(255,255,255,0.5)";
-        div.onmouseleave=()=>div.style.background="";
+        div.className="song";
 
         const name=document.createElement("span");
-        name.style.flex="1";
+        name.className="song-name";
         name.innerText=item.name;
         name.onclick=()=>playFromSaved(item);
 
@@ -432,14 +344,17 @@ function playFromSaved(item){
     audio.src=URL.createObjectURL(item.blob);
     document.getElementById("title").innerText="💾 "+item.name;
     saveBtn.disabled=true;
-    audio.play(); playing=true;
-    document.getElementById("playBtn").innerText="⏸";
-    disc.style.animationPlayState="running";
+    audio.load();
+    audio.oncanplay = function(){
+        audio.oncanplay = null;
+        playSong();
+    };
     showToast("▶ Playing: "+item.name);
 }
 
+/* ── TABS ── */
 function switchTab(tab){
-    document.getElementById("playlist").style.display  = tab==="playlist" ? "block" : "none";
+    document.getElementById("playlist").style.display = tab==="playlist" ? "block" : "none";
     document.getElementById("savedList").classList.toggle("show", tab==="saved");
     document.querySelectorAll(".tab").forEach((btn,i)=>{
         btn.classList.toggle("active-tab",(i===0&&tab==="playlist")||(i===1&&tab==="saved"));
@@ -454,9 +369,20 @@ async function clearAllSaved(){
     renderSavedList();
 }
 
-// INIT — load DB and show saved songs on startup
-openDB().then(()=>renderSavedList());
-</script>
+/* ── TOAST ── */
+function showToast(msg){
+    const toast=document.getElementById("toast");
+    toast.innerText=msg;
+    toast.classList.add("show");
+    setTimeout(()=>toast.classList.remove("show"),3000);
+}
 
+/* ── INIT ── */
+openDB().then(()=>{
+    renderSavedList();
+    document.getElementById("playlist").style.display="block";
+});
+</script>
 </body>
 </html>
+   
