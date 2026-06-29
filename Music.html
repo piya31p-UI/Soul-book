@@ -5,13 +5,15 @@
 <title>Advanced Music Player</title>
 
 <style>
+    /* REPLACE LINE 9-14 */
 body{
     margin:0;
     font-family:Arial;
     background:linear-gradient(135deg,#ff9a9e,#fad0c4);
-    height:100vh;
+    min-height:100vh;        /* ← change height to min-height */
     width:100vw;
-    overflow:hidden;
+    overflow-x:hidden;       /* ← change overflow:hidden to this */
+    overflow-y:auto;         /* ← ADD this line */
 }
 
 /* FULL SCREEN PLAYER */
@@ -105,6 +107,47 @@ button{
 .song:hover{
     background:rgba(255,255,255,0.5);
 }
+    /* ADD BEFORE YOUR .save CSS (around line 74) */
+
+/* TABS */
+.tabs{ display:flex; gap:10px; margin-top:20px; }
+.tab{
+    padding:10px 24px; border:none;
+    border-radius:20px; cursor:pointer;
+    font-size:16px; background:rgba(255,255,255,0.4);
+    font-weight:bold;
+}
+.tab.active-tab{ background:#ff4d6d; color:white; }
+
+/* SAVED LIST */
+#savedList{
+    width:60%; max-height:200px;
+    overflow-y:auto; margin-top:10px;
+    background:rgba(255,255,255,0.3);
+    padding:10px; border-radius:10px;
+    display:none;
+}
+#savedList.show{ display:block; }
+
+.icon-btn{
+    background:transparent; border:none;
+    font-size:18px; cursor:pointer;
+    padding:2px 6px; border-radius:6px;
+    margin:0;
+}
+.del-btn{ color:#e74c3c; }
+.saved-badge{
+    font-size:11px; background:#6a11cb;
+    color:white; border-radius:20px;
+    padding:2px 8px; margin-left:6px;
+}
+.empty{ color:#888; font-style:italic; padding:20px; }
+.clearall{
+    background:#e74c3c; color:white;
+    font-size:14px; padding:8px 14px;
+    margin-top:8px; border-radius:10px;
+    border:none; cursor:pointer;
+}
 .active{
     color:#ff4d6d;
     font-weight:bold;
@@ -182,7 +225,18 @@ button{
     
 
 <div id="toast"></div>
+<!-- ADD AFTER THE </div> THAT CLOSES CONTROLS (~line 108) -->
 
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active-tab" onclick="switchTab('playlist')">🎵 Queue</button>
+  <button class="tab" onclick="switchTab('saved')">💾 Saved Songs</button>
+</div>
+
+<!-- SAVED LIST -->
+<div id="savedList"></div>
+
+<button class="clearall" onclick="clearAllSaved()">🗑 Clear All Saved</button>
 <!-- VOLUME -->
 Volume:
 <input type="range" id="volume" min="0" max="1" step="0.01">
@@ -197,6 +251,22 @@ let songs = [];
 let current = 0;
 let audio = document.getElementById("audio");
 let playing = false;
+    /* ADD AFTER:  let playing = false; */
+
+// ── INDEXEDDB ──
+let db;
+function openDB(){
+    return new Promise((resolve,reject)=>{
+        const req = indexedDB.open("MusicPlayerDB",1);
+        req.onupgradeneeded = e => e.target.result.createObjectStore("savedSongs",{keyPath:"name"});
+        req.onsuccess = e => { db = e.target.result; resolve(db); };
+        req.onerror   = e => reject(e);
+    });
+}
+function dbSave(obj){ return new Promise((res,rej)=>{ const r=db.transaction("savedSongs","readwrite").objectStore("savedSongs").put(obj); r.onsuccess=res; r.onerror=rej; }); }
+function dbGetAll(){ return new Promise((res,rej)=>{ const r=db.transaction("savedSongs","readonly").objectStore("savedSongs").getAll(); r.onsuccess=e=>res(e.target.result); r.onerror=rej; }); }
+function dbDelete(name){ return new Promise((res,rej)=>{ const r=db.transaction("savedSongs","readwrite").objectStore("savedSongs").delete(name); r.onsuccess=res; r.onerror=rej; }); }
+function dbClear(){ return new Promise((res,rej)=>{ const r=db.transaction("savedSongs","readwrite").objectStore("savedSongs").clear(); r.onsuccess=res; r.onerror=rej; }); }
     
 
 const saveBtn = document.getElementById("saveBtn");
@@ -289,39 +359,33 @@ document.getElementById("volume").addEventListener("input", function(){
 audio.addEventListener("ended", nextSong);
     // ADD AFTER LINE 175
 
-function saveCurrentSong() {
-    if (songs.length === 0) return;
-    saveSong(current);
+/* REPLACE your old saveCurrentSong() and saveSong() with this */
+
+function saveCurrentSong(){
+    if(songs.length===0) return;
+    saveSongToDB(current);
 }
 
-function saveSong(i) {
+async function saveSongToDB(i){
     const song = songs[i];
-    if (!song) return;
+    if(!song) return;
 
-    saveBar.style.width = "0%";
-    let pct = 0;
-    const ticker = setInterval(() => {
-        pct = Math.min(pct + Math.random() * 20, 90);
-        saveBar.style.width = pct + "%";
-    }, 100);
+    saveBar.style.width="0%";
+    let pct=0;
+    const ticker=setInterval(()=>{ pct=Math.min(pct+Math.random()*25,90); saveBar.style.width=pct+"%"; },80);
 
-    const url = URL.createObjectURL(song);
-
-    setTimeout(() => {
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = song.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
+    try{
+        await dbSave({ name:song.name, blob:song });
         clearInterval(ticker);
-        saveBar.style.width = "100%";
-        setTimeout(() => { saveBar.style.width = "0%"; }, 600);
-        URL.revokeObjectURL(url);
-
-        showToast(`💾 "${song.name}" saved to your device!`);
-    }, 600);
+        saveBar.style.width="100%";
+        setTimeout(()=>{ saveBar.style.width="0%"; },500);
+        showToast(`💾 "${song.name}" saved to app!`);
+        renderSavedList();
+    } catch(err){
+        clearInterval(ticker);
+        saveBar.style.width="0%";
+        showToast("❌ Could not save. Try again.");
+    }
 }
 
 function showToast(msg) {
@@ -330,6 +394,68 @@ function showToast(msg) {
     toast.classList.add("show");
     setTimeout(() => toast.classList.remove("show"), 3000);
 }
+    /* ADD BEFORE </script> */
+
+async function renderSavedList(){
+    const list = document.getElementById("savedList");
+    list.innerHTML="";
+    const saved = await dbGetAll();
+    if(saved.length===0){ list.innerHTML=`<div class="empty">No saved songs yet. Hit 💾 to save!</div>`; return; }
+    saved.forEach(item=>{
+        const div=document.createElement("div");
+        div.style.cssText="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;font-size:16px;border-radius:6px;cursor:pointer;";
+        div.onmouseenter=()=>div.style.background="rgba(255,255,255,0.5)";
+        div.onmouseleave=()=>div.style.background="";
+
+        const name=document.createElement("span");
+        name.style.flex="1";
+        name.innerText=item.name;
+        name.onclick=()=>playFromSaved(item);
+
+        const badge=document.createElement("span");
+        badge.className="saved-badge";
+        badge.innerText="Saved";
+
+        const del=document.createElement("button");
+        del.className="icon-btn del-btn";
+        del.innerHTML="🗑";
+        del.onclick=async e=>{ e.stopPropagation(); await dbDelete(item.name); showToast("🗑 Removed"); renderSavedList(); };
+
+        div.appendChild(name);
+        div.appendChild(badge);
+        div.appendChild(del);
+        list.appendChild(div);
+    });
+}
+
+function playFromSaved(item){
+    audio.src=URL.createObjectURL(item.blob);
+    document.getElementById("title").innerText="💾 "+item.name;
+    saveBtn.disabled=true;
+    audio.play(); playing=true;
+    document.getElementById("playBtn").innerText="⏸";
+    disc.style.animationPlayState="running";
+    showToast("▶ Playing: "+item.name);
+}
+
+function switchTab(tab){
+    document.getElementById("playlist").style.display  = tab==="playlist" ? "block" : "none";
+    document.getElementById("savedList").classList.toggle("show", tab==="saved");
+    document.querySelectorAll(".tab").forEach((btn,i)=>{
+        btn.classList.toggle("active-tab",(i===0&&tab==="playlist")||(i===1&&tab==="saved"));
+    });
+    if(tab==="saved") renderSavedList();
+}
+
+async function clearAllSaved(){
+    if(!confirm("Remove ALL saved songs?")) return;
+    await dbClear();
+    showToast("🗑 All saved songs cleared");
+    renderSavedList();
+}
+
+// INIT — load DB and show saved songs on startup
+openDB().then(()=>renderSavedList());
 </script>
 
 </body>
