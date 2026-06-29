@@ -108,6 +108,7 @@
         let direction = "NONE"; // Start still! Wait for user input direction
         let food = randomFood();
         let score = 0;
+        let highScore = localStorage.getItem("snake_highscore") || 0;
 
         let gameStarted = false; 
         let isPaused = false;   
@@ -195,7 +196,10 @@
                     document.getElementById("start-btn").innerText = "Play Again";
                     return;
                 }
-            }
+            }if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("snake_highscore", highScore);
+}
 
             if (headX === food.x && headY === food.y) {
     food = randomFood();
@@ -213,6 +217,8 @@
             ctx.fillStyle = "white";
 ctx.font = "bold 16px sans-serif";
 ctx.fillText("🍎 " + score, 10, 20);
+            ctx.fillStyle = "#ffd700";
+ctx.fillText("🏆 " + highScore, 10, 40);
 
             // Snake Rendering
             for (let i = 0; i < snake.length; i++) {
