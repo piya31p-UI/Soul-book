@@ -107,6 +107,7 @@
         let snake = [{ x: 200, y: 200 }];
         let direction = "NONE"; // Start still! Wait for user input direction
         let food = randomFood();
+        let score = 0;
 
         let gameStarted = false; 
         let isPaused = false;   
@@ -164,6 +165,7 @@
             snake = [{ x: 200, y: 200 }];
             direction = "NONE"; // Fresh reset leaves snake sitting peacefully
             food = randomFood();
+            score = 0;
         }
 
         function update() {
@@ -196,8 +198,9 @@
             }
 
             if (headX === food.x && headY === food.y) {
-                food = randomFood();
-            } else {
+    food = randomFood();
+    score++;
+    } else {
                 snake.pop();
             }
 
@@ -207,6 +210,9 @@
 
         function draw() {
             ctx.clearRect(0, 0, 400, 400);
+            ctx.fillStyle = "white";
+ctx.font = "bold 16px sans-serif";
+ctx.fillText("🍎 " + score, 10, 20);
 
             // Snake Rendering
             for (let i = 0; i < snake.length; i++) {
